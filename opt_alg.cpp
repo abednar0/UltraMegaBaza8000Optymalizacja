@@ -361,6 +361,10 @@ solution pen(matrix(*ff)(matrix, matrix, matrix), matrix x0, double c, double dc
         while (true) {
             new_solution = sym_NM(ff, current_solution.x, step_size, alpha, beta, gamma, delta, epsilon, Nmax, ud1, penalty_coeff);
 
+            // std::cout << "x_opt: " << current_solution.x(0) << ", " << current_solution.x(1) << std::endl;
+            // std::cout << "y_opt: " << current_solution.y(0) << std::endl;
+            // std::cout << "Liczba wywo³añ funkcji celu: " << solution::f_calls << std::endl;
+
             if (norm(new_solution.x - current_solution.x) < epsilon || solution::f_calls > Nmax) {
                 new_solution.flag = 0;
                 return new_solution;

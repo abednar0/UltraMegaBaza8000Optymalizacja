@@ -251,34 +251,75 @@ matrix generate_random_point() {
 
 void lab3() {
     try {
-        // Ustawienia dla testu
-        matrix x0 = matrix(2, 1, 3.0);  // Punkt pocz¹tkowy
-        double penalty_start = 1.0;     // Pocz¹tkowy wspó³czynnik kary
-        double penalty_scale_ext = 2.0; // Skalowanie dla zewnêtrznej funkcji kary
-        double penalty_scale_int = 0.5; // Skalowanie dla wewnêtrznej funkcji kary
-        double epsilon = 1e-3;          // Kryterium dok³adnoœci
-        int Nmax = 10000;               // Maksymalna liczba iteracji
+        //FUNKCJA TESTOWA
+        // Parametry wspólne
+        double penalty_start = 1.23;         // Pocz¹tkowy wspó³czynnik kary
+        double penalty_scale_ext = 2.0;     // Skalowanie dla zewnêtrznej funkcji kary
+        double penalty_scale_int = 1.5;     // Skalowanie dla wewnêtrznej funkcji kary
+        double epsilon = 1e-3;              // Kryterium dok³adnoœci
+        int Nmax = 10000;                   // Maksymalna liczba iteracji
+        int num_iterations = 100;           // Liczba optymalizacji
+        std::vector<double> a_values = {4.0, 4.4934, 5.0}; // Wartoœci parametru a
 
-        // Parametr ograniczenia (wartoœæ a)
-        matrix a_value = matrix(1, 1, 4.4934);
+        // Wyniki do zapisania
+        std::ofstream results("C:/Users/Ala/Desktop/optyma/results.csv");
+        results << std::fixed << std::setprecision(7); // Ustaw precyzjê zapisu
+        results << "a;method;x1;x2;y;function_calls\n";
 
-        // Optymalizacja zewnêtrzna
-        solution external_opt = pen(fff3T, x0, penalty_start, penalty_scale_ext, epsilon, Nmax, a_value, matrix(2, new double[2]{1.0, 2.0}));
-        std::cout << "Zewnêtrzna kara:" << std::endl;
-        std::cout << "x_opt: " << external_opt.x(0) << ", " << external_opt.x(1) << std::endl;
-        std::cout << "y_opt: " << external_opt.y(0) << std::endl;
-        std::cout << "Liczba wywo³añ funkcji celu: " << solution::f_calls << std::endl;
+        for (double a_val : a_values) {
+            matrix a_value = matrix(1, 1, a_val);
 
-        solution::clear_calls();
+            for (int i = 0; i < num_iterations; ++i) {
+                // Generowanie losowego punktu startowego w obszarze dopuszczalnym
+                matrix x0 = rand_mat(2, 1);
+                x0(0, 0) *= 1.0;  // Zakres dla x1 [-1, 1]
+                x0(1, 0) *= 1.0;  // Zakres dla x2 [-1, 1]
 
-        // Optymalizacja wewnêtrzna
-        solution internal_opt = pen(fff3T, x0, penalty_start, penalty_scale_int, epsilon, Nmax, a_value, matrix(2, new double[2]{1.0, 0.5}));
-        std::cout << "Wewnêtrzna kara:" << std::endl;
-        std::cout << "x_opt: " << internal_opt.x(0) << ", " << internal_opt.x(1) << std::endl;
-        std::cout << "y_opt: " << internal_opt.y(0) << std::endl;
-        std::cout << "Liczba wywo³añ funkcji celu: " << solution::f_calls << std::endl;
+                // Optymalizacja zewnêtrzna
+                solution::clear_calls();
+                solution external_opt = pen(ff3T, x0, penalty_start, penalty_scale_ext, epsilon, Nmax, a_value,
+                                            matrix(2, new double[2]{1.0, 2.0}));
+                results << a_val << ";external;"
+                        << external_opt.x(0, 0) << ";" << external_opt.x(1, 0) << ";"
+                        << external_opt.y(0, 0) << ";"
+                        << solution::f_calls << "\n";
 
+                // Optymalizacja wewnêtrzna
+                solution::clear_calls();
+                solution internal_opt = pen(ff3T, x0, penalty_start, penalty_scale_int, epsilon, Nmax, a_value,
+                                            matrix(2, new double[2]{1.0, 0.5}));
+                results << a_val << ";internal;"
+                        << internal_opt.x(0, 0) << ";" << internal_opt.x(1, 0) << ";"
+                        << internal_opt.y(0, 0) << ";"
+                        << solution::f_calls << "\n";
+            }
+        }
+
+        results.close();
+        std::cout << "Optymalizacja zakoñczona, wyniki zapisano w pliku results.csv" << std::endl;
+
+        //SYMULACJA PROBLEMU
+        // Parametry pocz¹tkowe
+        double x0_values[2] = { 5.0, 10.0 }; // Prêdkoœæ pozioma i k¹towa
+        matrix x0(2, x0_values);
+
+        double c = 1.22, dc = 2.0, epsilon2 = 1e-3;
+        int Nmax2 = 1000;
+
+        // Ustawienia funkcji kary
+        matrix ud1; // Nie u¿ywane w ff3R
+        matrix ud2(1, 1, c);
+
+        // Rozwi¹zanie problemu rzeczywistego
+        solution sol_real = pen(ff3R, x0, c, dc, epsilon2, Nmax2, ud1, ud2);
+
+        // Wyniki
+        std::cout << "Problem rzeczywisty (zewnêtrzna kara):\n";
+        std::cout << "x_opt (v_x, omega): " << sol_real.x << "\n";
+        std::cout << "y_opt (cel): " << sol_real.y << "\n";
+        std::cout << "Liczba wywo³añ funkcji celu: " << solution::f_calls << "\n";
     }
+
     catch (const std::exception &e) {
         std::cerr << "Fatal error in lab3: " << e.what() << std::endl;
     } catch (...) {

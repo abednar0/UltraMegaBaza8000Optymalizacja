@@ -144,33 +144,17 @@ matrix ff2R(matrix x, matrix ud1, matrix ud2) {
     return {Q};
 }
 
-matrix ff3T(matrix x, matrix ud1, matrix ud2) {
-    // Wyci¹ganie wspó³rzêdnych x1 i x2 z macierzy x
-    double x1 = x(0, 0);
-    double x2 = x(1, 0);
-
-    // Obliczanie mianownika: sqrt((x1 / pi)^2 + (x2 / pi)^2)
-    double denominator = sqrt(pow(x1 / M_PI, 2) + pow(x2 / M_PI, 2));
-
-
-    // Obliczanie wartoœci funkcji celu
-    double result = sin(M_PI * denominator) / (M_PI * denominator);
-
-    // Zwracanie wyniku jako macierz 1x1
-    return matrix(result);
-}
-
-bool g1(matrix x1) {
-    return (-x1() + 1 <= 0);
-}
-
-bool g2(matrix x2) {
-    return (-x2() + 1 <= 0);
-}
-
-bool g3(matrix x1, matrix x2, double alpha) {
-    return (sqrt(pow(x1(), 2) + pow(x2(), 2)) - alpha <= 0);
-}
+// bool g1(matrix x1) {
+//     return (-x1() + 1 <= 0);
+// }
+//
+// bool g2(matrix x2) {
+//     return (-x2() + 1 <= 0);
+// }
+//
+// bool g3(matrix x1, matrix x2, double alpha) {
+//     return (sqrt(pow(x1(), 2) + pow(x2(), 2)) - alpha <= 0);
+// }
 
 // matrix fR3(matrix x, matrix ud1, matrix ud2) {
 //     matrix y;
@@ -198,11 +182,11 @@ bool g3(matrix x1, matrix x2, double alpha) {
 //     return y;
 // }
 
-matrix fff3T(matrix x, matrix ud1, matrix ud2) {
+matrix ff3T(matrix x, matrix ud1, matrix ud2) {
     double argument = M_PI * sqrt(pow(x(0) / M_PI, 2) + pow(x(1) / M_PI, 2));
     matrix y = sin(argument) / argument;
 
-    // Definicja ograniczeñ
+    // Wektor ograniczeñ
     std::vector<std::function<double(matrix)>> constraints = {
         [](matrix x) { return -x(0) + 1; },           // g1: -x1 + 1 <= 0
         [](matrix x) { return -x(1) + 1; },           // g2: -x2 + 1 <= 0
@@ -228,4 +212,77 @@ matrix fff3T(matrix x, matrix ud1, matrix ud2) {
     }
 
     return y;
+}
+
+matrix ff3R(matrix x, matrix ud1, matrix ud2) {
+
+    // Parametry wejœciowe
+    double v_x = x(0, 0);    // Prêdkoœæ pozioma [m/s]
+    double omega = x(1, 0);  // Prêdkoœæ k¹towa [rad/s]
+
+    // Sta³e fizyczne
+    const double m = 0.6;         // Masa pi³ki [kg]
+    const double r = 0.12;        // Promieñ pi³ki [m]
+    const double rho = 1.2;       // Gêstoœæ powietrza [kg/m^3]
+    const double g = 9.81;        // Przyspieszenie grawitacyjne [m/s^2]
+    const double C = 0.47;        // Wspó³czynnik oporu
+    const double S = M_PI * r * r; // Powierzchnia przekroju poprzecznego
+
+    // Warunki pocz¹tkowe
+    double y0 = 100.0;  // Pocz¹tkowa wysokoœæ [m]
+    double t0 = 0.0, dt = 0.01, t_max = 7.0;
+
+    // Pozycje i prêdkoœci
+    double x_pos = 0.0, y_pos = y0;
+    double v_y = 0.0;  // Pocz¹tkowa prêdkoœæ pionowa
+    double t = t0;
+
+    // Symulacja ruchu
+    while (t <= t_max) {
+        // Prêdkoœæ w powietrzu
+        double v_abs = sqrt(v_x * v_x + v_y * v_y);
+
+        // Si³y dzia³aj¹ce na pi³kê
+        double D_x = 0.5 * C * rho * S * v_x * fabs(v_x);
+        double D_y = 0.5 * C * rho * S * v_y * fabs(v_y);
+        double F_x = rho * v_y * omega * M_PI * pow(r, 3);
+        double F_y = rho * v_x * omega * M_PI * pow(r, 3);
+
+        // Przyspieszenia
+        double a_x = -(D_x + F_x) / m;
+        double a_y = -(D_y + F_y + m * g) / m;
+
+        // Aktualizacja prêdkoœci i pozycji
+        v_x += a_x * dt;
+        v_y += a_y * dt;
+        x_pos += v_x * dt;
+        y_pos += v_y * dt;
+
+        // Sprawdzenie czy pi³ka osi¹gnê³a ziemiê
+        if (y_pos <= 0) break;
+
+        t += dt;
+    }
+
+    // Funkcja celu: maksymalizacja x_pos
+    double goal = -x_pos;
+
+    // Penalizacja: Trafienie do kosza
+    double penalty = 0.0;
+
+    // Sprawdzanie odleg³oœci od kosza (x = 5.0, y = 50.0)
+    double distance_to_hoop = sqrt(pow(x_pos - 5.0, 2) + pow(y_pos - 50.0, 2));
+    penalty += pow(distance_to_hoop > 0.5 ? distance_to_hoop - 0.5 : 0.0, 2);
+
+    // Dodatkowa kara za wyjœcie poza zakresy
+    if (v_x < -10 || v_x > 10) {
+        penalty += pow(v_x < -10 ? -10 - v_x : v_x - 10, 2);
+    }
+    if (omega < -15 || omega > 15) {
+        penalty += pow(omega < -15 ? -15 - omega : omega - 15, 2);
+    }
+
+    // Zwracamy wynik jako kombinacjê celu i kary
+    return matrix(goal + ud2(0, 0) * penalty);
+
 }

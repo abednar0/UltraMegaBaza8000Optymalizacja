@@ -28,12 +28,12 @@ matrix ff2R(matrix x, matrix ud1, matrix ud2);
 
 matrix df2R(double t, matrix Y, matrix ud1, matrix ud2);
 
+// matrix g1(matrix x, matrix ud1);
+//
+// matrix g2(matrix x, matrix ud1);
+//
+// matrix g3(matrix x, matrix ud1);
+
 matrix ff3T(matrix x, matrix ud1, matrix ud2);
 
-matrix g1(matrix x, matrix ud1);
-
-matrix g2(matrix x, matrix ud1);
-
-matrix g3(matrix x, matrix ud1);
-
-matrix fff3T(matrix x, matrix ud1, matrix ud2);
+matrix ff3R(matrix x, matrix ud1, matrix ud2);
